@@ -21,17 +21,9 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var mMap: GoogleMap
     private lateinit var mUiSettings: UiSettings
 
-//    private val mMyLocationButtonCheckbox: CheckBox? = null
-//
-//    private val mMyLocationLayerCheckbox: CheckBox? = null
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_maps)
-
-//        mMyLocationButtonCheckbox = (CheckBox) findViewById(R.id.mylocationbutton_toggle);
-//        mMyLocationLayerCheckbox = (CheckBox) findViewById(R.id.mylocationlayer_toggle);
-
 
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         val mapFragment = supportFragmentManager
@@ -40,7 +32,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
             == PackageManager.PERMISSION_GRANTED) {
-            mMap.setMyLocationEnabled(true);
+            mMap.setMyLocationEnabled(true)
         } else {
             // Show rationale and request permission.
         }
@@ -62,11 +54,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         mUiSettings = mMap.uiSettings
 
         mUiSettings.isZoomControlsEnabled = true
-
-//        mUiSettings.setZoomControlsEnabled(isChecked(R.id.zoom_buttons_toggle));
-//        mUiSettings.setCompassEnabled(isChecked(R.id.compass_toggle));
-//        mUiSettings.setMyLocationButtonEnabled(isChecked(R.id.mylocationbutton_toggle));
-//        mMap.setMyLocationEnabled(isChecked(R.id.mylocationlayer_toggle));
 
         // Add a marker in Sydney and move the camera
         val sydney = LatLng(-34.0, 151.0)
