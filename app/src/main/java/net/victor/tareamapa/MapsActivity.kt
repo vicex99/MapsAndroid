@@ -1,17 +1,25 @@
 package net.victor.tareamapa
 
 import android.content.pm.PackageManager
+import android.location.Address
+import android.location.Geocoder
 import android.location.Location
 import android.os.Bundle
+import android.support.design.widget.FloatingActionButton
 import android.support.v4.app.ActivityCompat
 import android.support.v7.app.AppCompatActivity
+import android.util.Log
 import android.widget.Toast
+import com.google.android.gms.common.GooglePlayServicesNotAvailableException
+import com.google.android.gms.common.GooglePlayServicesRepairableException
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.places.ui.PlacePicker
 import com.google.android.gms.maps.*
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
+import java.io.IOException
 
 
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMyLocationButtonClickListener, GoogleMap.OnMyLocationClickListener, GoogleMap.OnMarkerClickListener {
@@ -24,6 +32,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMyLoca
 
     companion object {
         private const val LOCATION_PERMISSION_REQUEST_CODE = 1
+        private const val PLACE_PICKER_REQUEST = 3
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -36,6 +45,11 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMyLoca
         mapFragment.getMapAsync(this)
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
+
+
+        findViewById<FloatingActionButton>(R.id.btnLocation).setOnClickListener {
+            loadPlacePicker()
+        }
     }
 
     /**
@@ -52,27 +66,13 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMyLoca
         mUiSettings = mMap.uiSettings
 
         mMap.setOnMarkerClickListener(this)
+        mMap.mapType = GoogleMap.MAP_TYPE_HYBRID
         mUiSettings.isZoomControlsEnabled = true
         mUiSettings.isMyLocationButtonEnabled = true
 
-        // Add a marker in Sydney and move the camera
-        val sydney = LatLng(-34.0, 151.0)
-        mMap.addMarker(MarkerOptions().position(sydney).title("Marker in Sydney"))
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney))
-
         setUpMap()
 
-//        mMap.isMyLocationEnabled = true
-//
-//        fusedLocationClient.lastLocation.addOnSuccessListener(this) { location ->
-//            // Got last known location. In some rare situations this can be null.
-//            // 3
-//            if (location != null) {
-//                lastLocation = location
-//                val currentLatLng = LatLng(location.latitude, location.longitude)
-//                mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 12f))
-//            }
-//        }
+
     }
 
     fun moveCamera(myPlace:LatLng){
@@ -95,9 +95,11 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMyLoca
     override fun onMarkerClick(p0: Marker?) = false
 
     private fun placeMarkerOnMap(location: LatLng) {
-        // 1
         val markerOptions = MarkerOptions().position(location)
-        // 2
+
+        val titleStr = getAddress(location)  // add these two lines
+        markerOptions.title(titleStr)
+
         mMap.addMarker(markerOptions)
     }
 
@@ -119,6 +121,43 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMyLoca
                 placeMarkerOnMap(currentLatLng)
                 mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 12f))
             }
+        }
+    }
+
+    // Geocoder
+    private fun getAddress(latLng: LatLng): String {
+        // 1
+        val geocoder = Geocoder(this)
+        val addresses: List<Address>?
+        val address: Address?
+        var addressText = ""
+
+        try {
+            // 2
+            addresses = geocoder.getFromLocation(latLng.latitude, latLng.longitude, 1)
+            // 3
+            if (null != addresses && !addresses.isEmpty()) {
+                address = addresses[0]
+                for (i in 0 until address.maxAddressLineIndex) {
+                    addressText += if (i == 0) address.getAddressLine(i) else "\n" + address.getAddressLine(i)
+                }
+            }
+        } catch (e: IOException) {
+            Log.e("MapsActivity", e.localizedMessage)
+        }
+
+        return addressText
+    }
+
+    private fun loadPlacePicker() {
+        val builder = PlacePicker.IntentBuilder()
+
+        try {
+            startActivityForResult(builder.build(this@MapsActivity), PLACE_PICKER_REQUEST)
+        } catch (e: GooglePlayServicesRepairableException) {
+            e.printStackTrace()
+        } catch (e: GooglePlayServicesNotAvailableException) {
+            e.printStackTrace()
         }
     }
 }
