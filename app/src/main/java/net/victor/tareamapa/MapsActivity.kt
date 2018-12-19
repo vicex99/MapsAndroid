@@ -1,25 +1,30 @@
 package net.victor.tareamapa
 
-import android.Manifest
 import android.content.pm.PackageManager
-import android.support.v7.app.AppCompatActivity
+import android.location.Location
 import android.os.Bundle
-import android.support.v4.content.ContextCompat
-
-import com.google.android.gms.maps.CameraUpdateFactory
-import com.google.android.gms.maps.GoogleMap
-import com.google.android.gms.maps.OnMapReadyCallback
-import com.google.android.gms.maps.SupportMapFragment
+import android.support.v4.app.ActivityCompat
+import android.support.v7.app.AppCompatActivity
+import android.widget.Toast
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.maps.*
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
-import com.google.android.gms.maps.UiSettings
-import android.widget.CheckBox
 
 
-class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
+class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMyLocationButtonClickListener, GoogleMap.OnMyLocationClickListener, GoogleMap.OnMarkerClickListener {
+
 
     private lateinit var mMap: GoogleMap
     private lateinit var mUiSettings: UiSettings
+    private lateinit var fusedLocationClient: FusedLocationProviderClient
+    private lateinit var lastLocation: Location
+
+    companion object {
+        private const val LOCATION_PERMISSION_REQUEST_CODE = 1
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -30,15 +35,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             .findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
 
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
-            == PackageManager.PERMISSION_GRANTED) {
-            mMap.setMyLocationEnabled(true)
-        } else {
-            // Show rationale and request permission.
-        }
-
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
     }
-
 
     /**
      * Manipulates the map once available.
@@ -53,11 +51,74 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         mMap = googleMap
         mUiSettings = mMap.uiSettings
 
+        mMap.setOnMarkerClickListener(this)
         mUiSettings.isZoomControlsEnabled = true
+        mUiSettings.isMyLocationButtonEnabled = true
 
         // Add a marker in Sydney and move the camera
         val sydney = LatLng(-34.0, 151.0)
         mMap.addMarker(MarkerOptions().position(sydney).title("Marker in Sydney"))
         mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney))
+
+        setUpMap()
+
+//        mMap.isMyLocationEnabled = true
+//
+//        fusedLocationClient.lastLocation.addOnSuccessListener(this) { location ->
+//            // Got last known location. In some rare situations this can be null.
+//            // 3
+//            if (location != null) {
+//                lastLocation = location
+//                val currentLatLng = LatLng(location.latitude, location.longitude)
+//                mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 12f))
+//            }
+//        }
+    }
+
+    fun moveCamera(myPlace:LatLng){
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(myPlace, 12.0f))
+    }
+
+    // map
+    override fun onMyLocationClick(location: Location) {
+        Toast.makeText(this, "Current location:\n$location", Toast.LENGTH_LONG).show()
+    }
+
+    override fun onMyLocationButtonClick(): Boolean {
+        Toast.makeText(this, "MyLocation button clicked", Toast.LENGTH_SHORT).show()
+        // Return false so that we don't consume the event and the default behavior still occurs
+        // (the camera animates to the user's current position).
+        return false
+    }
+
+    // my location
+    override fun onMarkerClick(p0: Marker?) = false
+
+    private fun placeMarkerOnMap(location: LatLng) {
+        // 1
+        val markerOptions = MarkerOptions().position(location)
+        // 2
+        mMap.addMarker(markerOptions)
+    }
+
+    private fun setUpMap() {
+        if (ActivityCompat.checkSelfPermission(this,
+                android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this,
+                arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION), LOCATION_PERMISSION_REQUEST_CODE)
+            return
+        }
+
+        mMap.isMyLocationEnabled = true
+
+        fusedLocationClient.lastLocation.addOnSuccessListener(this) { location ->
+            // Got last known location. In some rare situations this can be null.
+            if (location != null) {
+                lastLocation = location
+                val currentLatLng = LatLng(location.latitude, location.longitude)
+                placeMarkerOnMap(currentLatLng)
+                mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 12f))
+            }
+        }
     }
 }
