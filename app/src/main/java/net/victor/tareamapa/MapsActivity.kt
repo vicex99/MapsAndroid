@@ -89,7 +89,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMyLoca
         mUiSettings.isMyLocationButtonEnabled = true
 
         setUpMap()
-
     }
 
     fun moveCamera(myPlace:LatLng){
